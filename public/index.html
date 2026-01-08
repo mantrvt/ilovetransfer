@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>❤️ iLoveTransfer</title>
+</head>
+<body>
+
+<h2>❤️ iLoveTransfer</h2>
+
+<input id="room" placeholder="Room name" />
+<button onclick="joinRoom()">Join Room</button>
+
+<br><br>
+
+<input type="file" id="fileInput">
+
+<p>Upload</p>
+<progress id="upload" value="0" max="100"></progress>
+
+<p>Download</p>
+<progress id="download" value="0" max="100"></progress>
+
+<script>
+const ws = new WebSocket("ws://" + location.host);
+let room = "default";
+
+const uploadBar = document.getElementById("upload");
+const downloadBar = document.getElementById("download");
+
+function joinRoom() {
+  room = document.getElementById("room").value || "default";
+  ws.send(JSON.stringify({ type: "join", room }));
+  alert("Joined room: " + room);
+}
+
+// ===== SEND FILE =====
+document.getElementById("fileInput").onchange = async (e) => {
+  const file = e.target.files[0];
+  const chunkSize = 64 * 1024; // 64KB
+  let offset = 0;
+
+  uploadBar.value = 0;
+
+  ws.send(JSON.stringify({
+    type: "file-start",
+    name: file.name,
+    size: file.size
+  }));
+
+  while (offset < file.size) {
+    const slice = file.slice(offset, offset + chunkSize);
+    const buffer = await slice.arrayBuffer();
+    ws.send(buffer);
+    offset += chunkSize;
+    uploadBar.value = (offset / file.size) * 100;
+  }
+
+  ws.send(JSON.stringify({ type: "file-end" }));
+  uploadBar.value = 100;
+};
+
+// ===== RECEIVE FILE =====
+let chunks = [];
+let fileName = "";
+let received = 0;
+let total = 0;
+
+ws.onmessage = (msg) => {
+  if (typeof msg.data === "string") {
+    const data = JSON.parse(msg.data);
+
+    if (data.type === "file-start") {
+      chunks = [];
+      fileName = data.name;
+      total = data.size;
+      received = 0;
+      downloadBar.value = 0;
+    }
+
+    if (data.type === "file-end") {
+      const blob = new Blob(chunks);
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = fileName;
+      a.click();
+      downloadBar.value = 100;
+    }
+  } else {
+    chunks.push(msg.data);
+    received += msg.data.size;
+    downloadBar.value = (received / total) * 100;
+  }
+};
+</script>
+
+</body>
+</html>
