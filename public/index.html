@@ -1,51 +1,204 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>❤️ iLoveTransfer</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #ff6b6b, #ff9ff3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .card {
+      background: #fff;
+      width: 100%;
+      max-width: 420px;
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #ff6b6b;
+    }
+
+    button {
+      background: #ff6b6b;
+      color: #fff;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #ff5252;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 14px;
+      color: #2ecc71;
+      display: none;
+    }
+
+    .file-box {
+      margin-top: 20px;
+      border: 2px dashed #ff6b6b;
+      border-radius: 14px;
+      padding: 20px;
+    }
+
+    .file-box label {
+      display: block;
+      font-weight: bold;
+      cursor: pointer;
+      color: #ff6b6b;
+    }
+
+    .file-box input {
+      display: none;
+    }
+
+    .progress-group {
+      margin-top: 16px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    progress {
+      width: 100%;
+      height: 14px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    progress::-webkit-progress-bar {
+      background: #eee;
+      border-radius: 10px;
+    }
+
+    progress::-webkit-progress-value {
+      background: #ff6b6b;
+      border-radius: 10px;
+    }
+
+    footer {
+      margin-top: 18px;
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 22px;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<h2>❤️ iLoveTransfer</h2>
+  <div class="card">
+    <h1>❤️ iLoveTransfer</h1>
+    <div class="subtitle">Instant file sharing between devices</div>
 
-<input id="room" placeholder="Room name" />
-<button onclick="joinRoom()">Join Room</button>
+    <input id="room" placeholder="Room name (e.g. love123)" />
+    <button onclick="joinRoom()">Join Room</button>
 
-<br><br>
+    <div class="status" id="status">Connected</div>
 
-<input type="file" id="fileInput" disabled>
+    <div class="file-box">
+      <label for="fileInput">📁 Select a file</label>
+      <input type="file" id="fileInput" />
+    </div>
 
-<p>Upload</p>
-<progress id="upload" value="0" max="100"></progress>
+    <div class="progress-group">
+      Upload
+      <progress id="upload" value="0" max="100"></progress>
+    </div>
 
-<p>Download</p>
-<progress id="download" value="0" max="100"></progress>
+    <div class="progress-group">
+      Download
+      <progress id="download" value="0" max="100"></progress>
+    </div>
+
+    <footer>
+      Simple • Fast • No login
+    </footer>
+  </div>
 
 <script>
-const ws = new WebSocket(
-  location.protocol === "https:" ? "wss://" + location.host : "ws://" + location.host
-);
-
-let joined = false;
+let ws;
+let room = "default";
 
 const uploadBar = document.getElementById("upload");
 const downloadBar = document.getElementById("download");
-const fileInput = document.getElementById("fileInput");
+const statusText = document.getElementById("status");
+
+function connectWS() {
+  ws = new WebSocket(
+    location.protocol === "https:"
+      ? "wss://" + location.host
+      : "ws://" + location.host
+  );
+
+  ws.onopen = () => {
+    statusText.style.display = "block";
+    statusText.textContent = "🟢 Connected";
+  };
+
+  ws.onmessage = handleMessage;
+}
+
+connectWS();
 
 function joinRoom() {
-  const room = document.getElementById("room").value || "default";
+  if (ws.readyState !== WebSocket.OPEN) {
+    alert("Connecting... try again");
+    return;
+  }
+  room = document.getElementById("room").value || "default";
   ws.send(JSON.stringify({ type: "join", room }));
-  joined = true;
-  fileInput.disabled = false;
   alert("Joined room: " + room);
 }
 
 // ===== SEND FILE =====
-fileInput.onchange = async (e) => {
-  if (!joined) {
-    alert("Join a room first!");
-    return;
-  }
-
+document.getElementById("fileInput").onchange = async (e) => {
   const file = e.target.files[0];
   const chunkSize = 64 * 1024;
   let offset = 0;
@@ -64,7 +217,6 @@ fileInput.onchange = async (e) => {
     ws.send(buffer);
     offset += chunkSize;
     uploadBar.value = (offset / file.size) * 100;
-    await new Promise(r => setTimeout(r, 2)); // 🧠 IMPORTANT
   }
 
   ws.send(JSON.stringify({ type: "file-end" }));
@@ -76,7 +228,7 @@ let fileName = "";
 let received = 0;
 let total = 0;
 
-ws.onmessage = (msg) => {
+function handleMessage(msg) {
   if (typeof msg.data === "string") {
     const data = JSON.parse(msg.data);
 
@@ -101,7 +253,7 @@ ws.onmessage = (msg) => {
     received += msg.data.size;
     downloadBar.value = (received / total) * 100;
   }
-};
+}
 </script>
 
 </body>
