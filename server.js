@@ -43,6 +43,9 @@ wss.on("connection", (ws) => {
     }
 
     // FILE START / END
+
+    console.log("Clients in room:", ws.room?.size);
+
     if (data.type === "file-start" || data.type === "file-end") {
       ws.room?.forEach(client => {
         if (client !== ws && client.readyState === WebSocket.OPEN) {
@@ -59,6 +62,9 @@ wss.on("connection", (ws) => {
   });
 });
 
-server.listen(8080, () => {
-  console.log("❤️ iLoveTransfer running at http://localhost:8080");
+const PORT = process.env.PORT || 8080;
+
+server.listen(PORT, () => {
+  console.log("❤️ iLoveTransfer running on port", PORT);
 });
+
