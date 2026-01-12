@@ -4,9 +4,13 @@ const fs = require("fs");
 const path = require("path");
 
 const server = http.createServer((req, res) => {
-  // serve index.html
   if (req.url === "/") {
     fs.readFile(path.join(__dirname, "public/index.html"), (err, data) => {
+      if (err) {
+        res.writeHead(500);
+        res.end("Error loading page");
+        return;
+      }
       res.writeHead(200, { "Content-Type": "text/html" });
       res.end(data);
     });
@@ -17,12 +21,15 @@ const wss = new WebSocket.Server({ server });
 const rooms = {}; // { roomName: Set<clients> }
 
 wss.on("connection", (ws) => {
+  console.log("🔌 Client connected");
 
   ws.on("message", (message, isBinary) => {
 
-    // 🔥 BINARY FILE CHUNK
+    // ===== BINARY FILE CHUNKS =====
     if (isBinary) {
-      ws.room?.forEach(client => {
+      if (!ws.room) return;
+
+      ws.room.forEach(client => {
         if (client !== ws && client.readyState === WebSocket.OPEN) {
           client.send(message, { binary: true });
         }
@@ -30,8 +37,13 @@ wss.on("connection", (ws) => {
       return;
     }
 
-    // 🔥 JSON MESSAGE
-    const data = JSON.parse(message.toString());
+    // ===== JSON MESSAGES =====
+    let data;
+    try {
+      data = JSON.parse(message.toString());
+    } catch {
+      return;
+    }
 
     // JOIN ROOM
     if (data.type === "join") {
@@ -39,15 +51,21 @@ wss.on("connection", (ws) => {
       rooms[data.room] = rooms[data.room] || new Set();
       rooms[data.room].add(ws);
       ws.room = rooms[data.room];
+
+      ws.send(JSON.stringify({
+        type: "joined",
+        room: data.room
+      }));
+
+      console.log(`👥 Joined room: ${data.room}`);
       return;
     }
 
     // FILE START / END
-
-    console.log("Clients in room:", ws.room?.size);
-
     if (data.type === "file-start" || data.type === "file-end") {
-      ws.room?.forEach(client => {
+      if (!ws.room) return;
+
+      ws.room.forEach(client => {
         if (client !== ws && client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify(data));
         }
@@ -58,13 +76,14 @@ wss.on("connection", (ws) => {
   ws.on("close", () => {
     if (ws.roomName && rooms[ws.roomName]) {
       rooms[ws.roomName].delete(ws);
+      console.log(`❌ Left room: ${ws.roomName}`);
     }
   });
 });
 
+// 🔥 IMPORTANT: Render-compatible port
 const PORT = process.env.PORT || 8080;
 
 server.listen(PORT, () => {
-  console.log("❤️ iLoveTransfer running on port", PORT);
+  console.log(`❤️ iLoveTransfer running on port ${PORT}`);
 });
-
