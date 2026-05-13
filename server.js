@@ -4,17 +4,24 @@ const fs = require("fs");
 const path = require("path");
 
 const server = http.createServer((req, res) => {
-  if (req.url === "/") {
-    fs.readFile(path.join(__dirname, "public/index.html"), (err, data) => {
-      if (err) {
-        res.writeHead(500);
-        res.end("Error loading page");
-        return;
-      }
-      res.writeHead(200, { "Content-Type": "text/html" });
-      res.end(data);
-    });
-  }
+  let filePath = path.join(__dirname, "public", req.url === "/" ? "index.html" : req.url);
+  
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      res.writeHead(404);
+      res.end("Not Found");
+      return;
+    }
+
+    let ext = path.extname(filePath);
+    let contentType = "text/html";
+    if (ext === ".png") contentType = "image/png";
+    if (ext === ".css") contentType = "text/css";
+    if (ext === ".js") contentType = "text/javascript";
+
+    res.writeHead(200, { "Content-Type": contentType });
+    res.end(data);
+  });
 });
 
 const wss = new WebSocket.Server({ server });
@@ -81,9 +88,9 @@ wss.on("connection", (ws) => {
   });
 });
 
-// 🔥 IMPORTANT: Render-compatible port
+//IMPORTANT: Render-compatible port
 const PORT = process.env.PORT || 8080;
 
 server.listen(PORT, () => {
-  console.log(`❤️ iLoveTransfer running on port ${PORT}`);
+  console.log(`iLoveTransfer running on port ${PORT}`);
 });
