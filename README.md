@@ -1,6 +1,6 @@
 # iLoveTransfer
 
-iLoveTransfer is a lightweight, instant file-sharing web application that allows users to quickly transfer files between devices. Built with a sleek, Kracked Devs-inspired cyberpunk aesthetic, it leverages WebSockets to enable fast, seamless sharing within custom rooms.
+iLoveTransfer is a lightweight, instant file-sharing web application that allows users to quickly transfer files between devices. It leverages WebSockets to enable fast, seamless sharing within custom rooms.
 
 **Live App:** [https://ilovetransfer.onrender.com/](https://ilovetransfer.onrender.com/)
 
@@ -12,7 +12,6 @@ iLoveTransfer is a lightweight, instant file-sharing web application that allows
 * **Room-Based Sharing:** Users can join specific "rooms" (e.g., `office123`) to securely share files only with others connected to the same room.
 * **Multiple File Support:** Select and send multiple files at once. The system automatically queues and transmits them sequentially.
 * **No Login Required:** Simple and fast—just enter a room name, connect, and start sharing immediately.
-* **Cyberpunk Aesthetic:** Features a sharp, high-contrast design system with deep black backgrounds, neon green accents, monospace typography, and a geometric tech vibe.
 * **Real-time Progress:** Visual progress bars track both the uploading and downloading phases of the transfer.
 
 ## How It Works
@@ -24,7 +23,7 @@ iLoveTransfer is a lightweight, instant file-sharing web application that allows
 
 ## Tech Stack
 
-* **Frontend:** HTML5, Vanilla JavaScript, CSS3 (Custom Design System)
+* **Frontend:** HTML5, Vanilla JavaScript, CSS3
 * **Backend:** Node.js
 * **Communication:** `ws` (WebSocket Library)
 
@@ -43,11 +42,3 @@ To run this project locally:
    npm start
    ```
 5. Open your browser and navigate to `http://localhost:8080`.
-
-## Design System
-
-The application's UI strictly adheres to a tech-forward, cyberpunk design system defined by:
-- Sharp geometry (`border-radius: 0`)
-- Deep black backgrounds (`#000000`) with subtle green grid overlays
-- Neon green primary accents (`#22C55E`, `#00FF5E`)
-- Monospace typography exclusively
