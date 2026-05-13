@@ -170,8 +170,8 @@
     <div class="status" id="status">Connected</div>
 
     <div class="file-box">
-      <label for="fileInput">Click to select a file</label>
-      <input type="file" id="fileInput" />
+      <label for="fileInput">Click to select files</label>
+      <input type="file" id="fileInput" multiple />
     </div>
 
     <div class="progress-group">
@@ -226,22 +226,29 @@ function joinRoom() {
 }
 
 document.getElementById("fileInput").onchange = async (e) => {
-  const file = e.target.files[0];
-  if(!file) return;
+  const files = e.target.files;
+  if (!files.length) return;
   const chunkSize = 64 * 1024;
-  let offset = 0;
-  uploadBar.value = 0;
+  
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    let offset = 0;
+    uploadBar.value = 0;
 
-  ws.send(JSON.stringify({ type: "file-start", name: file.name, size: file.size }));
+    ws.send(JSON.stringify({ type: "file-start", name: file.name, size: file.size }));
 
-  while (offset < file.size) {
-    const slice = file.slice(offset, offset + chunkSize);
-    const buffer = await slice.arrayBuffer();
-    ws.send(buffer);
-    offset += chunkSize;
-    uploadBar.value = (offset / file.size) * 100;
+    while (offset < file.size) {
+      const slice = file.slice(offset, offset + chunkSize);
+      const buffer = await slice.arrayBuffer();
+      ws.send(buffer);
+      offset += chunkSize;
+      uploadBar.value = (offset / file.size) * 100;
+    }
+    ws.send(JSON.stringify({ type: "file-end" }));
   }
-  ws.send(JSON.stringify({ type: "file-end" }));
+  
+  // Clear the input so the same files can be selected again if needed
+  e.target.value = "";
 };
 
 let chunks = [];
